@@ -426,9 +426,7 @@ ReadSectorCommon:
         mov     bp, di
                 ; ds:si=ds:bp -> active/selected partition entry
 
-        push    es
-        push    bx
-        retf                            ; done
+        jmp     bx                      ; done
 
 
 ; 9 bytes
