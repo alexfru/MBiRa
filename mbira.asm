@@ -114,8 +114,6 @@ bpbHeadsPerCylinder:                    ; 2 bytes overwritten with data here
 %endif
         rep     movsw
 
-        mov     es, cx                  ; es=0
-
 ;;;;;;;;;;;;;;;;;;;;;;
 ;; Jump to the copy ;;
 ;;;;;;;;;;;;;;;;;;;;;;
@@ -127,7 +125,8 @@ bsActiveEntryOfs:               ; 2 bytes (0-init) overwritten with data here
         dw      0
 
 main:
-        ; cs=ds=es=ss=0, sp=7C00h
+        ; cs=ds=ss=0, sp=7C00h
+        ; es will also be set to 0 a bit later
 
 ;;;;;;;;;;;;;;;;;;
 ;; Some prep... ;;
@@ -184,8 +183,13 @@ GotGeometry:
 
 PrintMenu:
 
+        push    cs
+        pop     es
+                ; cs=ds=es=ss=0
+
         ; If execution reaches here from the LBA code above,
-        ; it's only to set cx=1024.
+        ; the product is meaningless, but we still need cx=1024
+        ; and the BIOS boot drive number on top of the stack.
         mov     cx, 1024                ; max cylinder count = 1024
         mul     cx
         pop     di                      ; BIOS boot drive number
@@ -451,6 +455,7 @@ Halt:
 ;; 0:CopyAbs)                                          ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Input:  DS:DI -> partition entry                    ;;
+;;         CH = 0                                      ;;
 ;; Output: CX = 0                                      ;;
 ;; Clobbers: AX, BX, DX, SI, BP                        ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -473,7 +478,7 @@ PrintInactive:
         mov     bh, 0
         xor     ax, ax
                 ; bl zero-extended to all of ax:bx
-        mov     cx, 3                   ; 3 decimal digits
+        mov     cl, 3                   ; 3 decimal digits
         call    PrintSpaceAndDec32      ; cx=0
 
         ; Mark entry as inactive
